@@ -74,4 +74,53 @@ app.get('/article', async (req, res) => {
 
 app.get('/', (req, res) => res.send('OK'));
 
+// Поиск статей по теме и сбор фото
+app.get('/news', async (req, res) => {
+    const query = req.query.q;
+    const num = parseInt(req.query.num) || 15;
+    if (!query) return res.json({ error: 'no query' });
+
+    try {
+        const browser = await getBrowser();
+        const page = await browser.newPage();
+        await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36');
+
+        // Ищем статьи через Google News
+        await page.goto(`https://news.google.com/search?q=${encodeURIComponent(query)}&hl=en`, {
+            waitUntil: 'networkidle2',
+            timeout: 30000
+        });
+
+        // Берём ссылки на статьи
+        const articleLinks = await page.evaluate(() => {
+            const links = Array.from(document.querySelectorAll('a[href*="./articles/"]'));
+            return links.slice(0, 5).map(a => a.href);
+        });
+
+        const allPhotos = [];
+
+        // Заходим на каждую статью и берём фото
+        for (const link of articleLinks) {
+            try {
+                await page.goto(link, { waitUntil: 'networkidle2', timeout: 20000 });
+                const photos = await page.evaluate(() => {
+                    return Array.from(document.querySelectorAll('img'))
+                        .map(img => img.src)
+                        .filter(src => src && src.startsWith('http'))
+                        .filter(src => !['logo','icon','avatar','placeholder','1x1','sprite'].some(x => src.includes(x)))
+                        .filter(src => /\.(jpg|jpeg|png|webp)/i.test(src));
+                });
+                allPhotos.push(...photos.slice(0, 5));
+            } catch {}
+            if (allPhotos.length >= num) break;
+        }
+
+        await browser.close();
+        const unique = [...new Set(allPhotos)].slice(0, num);
+        res.json({ urls: unique, count: unique.length });
+    } catch(e) {
+        res.json({ error: e.message, urls: [], count: 0 });
+    }
+});
+
 app.listen(PORT, () => console.log(`Running on port ${PORT}`));
