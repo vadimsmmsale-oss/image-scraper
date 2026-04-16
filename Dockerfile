@@ -1,19 +1,15 @@
-FROM ubuntu:22.04
+FROM zenika/alpine-chrome:with-puppeteer
 
-ENV DEBIAN_FRONTEND=noninteractive
+USER root
 
-RUN apt-get update && apt-get install -y \
-    python3 python3-pip \
-    chromium-browser \
-    && rm -rf /var/lib/apt/lists/*
+RUN apk add --no-cache python3 py3-pip
 
 WORKDIR /app
 COPY requirements.txt .
-RUN pip3 install -r requirements.txt
+RUN pip3 install -r requirements.txt --break-system-packages
 
 COPY . .
 
-ENV CHROME_BIN=/usr/bin/chromium-browser
 ENV PYPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
 
-CMD ["sh", "-c", "python3 app.py"]
+CMD ["python3", "app.py"]
