@@ -1,4 +1,0 @@
-flask
-pyppeteer
-requests
-beautifulsoup4
