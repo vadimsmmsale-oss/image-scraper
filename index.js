@@ -22,30 +22,30 @@ app.get('/images', async (req, res) => {
     const num = parseInt(req.query.num) || 10;
     if (!query) return res.json({ error: 'no query' });
 
-    const browser = await getBrowser();
-    const page = await browser.newPage();
-    await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36');
+    try {
+        const browser = await getBrowser();
+        const page = await browser.newPage();
+        await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36');
+        
+        await page.goto(`https://www.google.com/search?q=${encodeURIComponent(query)}&tbm=isch&hl=en`, {
+            waitUntil: 'networkidle2',
+            timeout: 30000
+        });
 
-    await page.goto(`https://www.google.com/search?q=${encodeURIComponent(query)}&tbm=isch&hl=en`);
-    await page.waitForSelector('img', { timeout: 10000 });
+        // Берём все src из img тегов напрямую без ожидания селектора
+        const urls = await page.evaluate((n) => {
+            const imgs = Array.from(document.querySelectorAll('img'));
+            return imgs
+                .map(img => img.src)
+                .filter(src => src && src.startsWith('http') && !src.includes('google') && !src.includes('gstatic'))
+                .slice(0, n);
+        }, num);
 
-    const urls = [];
-    const images = await page.$$('img.YQ4gaf');
-
-    for (const img of images.slice(0, num * 2)) {
-        try {
-            await img.click();
-            await new Promise(r => setTimeout(r, 1000));
-            const src = await page.$eval('img.iPVvYb, img.r48jcc', el => el.src).catch(() => null);
-            if (src && src.startsWith('http') && !src.includes('encrypted') && !src.includes('google.com')) {
-                urls.push(src);
-            }
-        } catch {}
-        if (urls.length >= num) break;
+        await browser.close();
+        res.json({ urls, count: urls.length });
+    } catch(e) {
+        res.json({ error: e.message, urls: [], count: 0 });
     }
-
-    await browser.close();
-    res.json({ urls, count: urls.length });
 });
 
 // Парсинг фото со статьи
