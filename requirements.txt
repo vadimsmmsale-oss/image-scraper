@@ -1,3 +1,6 @@
 flask
 pyppeteer
 gunicorn
+requests
+beautifulsoup4
+pillow
