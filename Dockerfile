@@ -1,17 +1,13 @@
-FROM python:3.11-slim
+FROM browserless/chrome:latest
 
-RUN apt-get update && apt-get install -y \
-    chromium \
-    chromium-driver \
-    && rm -rf /var/lib/apt/lists/*
+USER root
+
+RUN apt-get update && apt-get install -y python3 python3-pip && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 COPY requirements.txt .
-RUN pip install -r requirements.txt
+RUN pip3 install -r requirements.txt
 
 COPY . .
 
-ENV CHROME_BIN=/usr/bin/chromium
-ENV CHROME_PATH=/usr/bin/chromium
-
-CMD ["sh", "-c", "python app.py"]
+CMD ["sh", "-c", "python3 app.py"]
