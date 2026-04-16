@@ -1,8 +1,2 @@
 [deploy]
-startCommand = "python app.py"
-
-[[services]]
-name = "web"
-
-[services.variables]
-PORT = "8080"
+startCommand = "python3 app.py"
