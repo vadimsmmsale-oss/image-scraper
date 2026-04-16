@@ -1,7 +1,9 @@
 from flask import Flask, request, jsonify
-import requests, re, time
+import requests, re
 
 app = Flask(__name__)
+
+PROXY = "http://nlozqyrk:5dj3126kbcyi@31.59.20.176:6754"
 
 HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
@@ -14,7 +16,8 @@ def scrape_google(query, num=10):
             "https://www.google.com/search",
             params={"q": query, "tbm": "isch", "hl": "en", "gl": "us"},
             headers=HEADERS,
-            timeout=15
+            proxies={"http": PROXY, "https": PROXY},
+            timeout=20
         )
         urls = re.findall(r'ou":"(https?://[^"]+)"', r.text)
         urls = [u for u in urls if 'google' not in u and 'gstatic' not in u]
